@@ -12,7 +12,7 @@
 // Sets default values
 AMyCharacter::AMyCharacter()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 	bUseControllerRotationPitch = false;
     bUseControllerRotationYaw = false;
     bUseControllerRotationRoll = false;
@@ -22,6 +22,9 @@ AMyCharacter::AMyCharacter()
     {
         Movement->bOrientRotationToMovement = true; 
         Movement->RotationRate = FRotator(0.0f, 500.0f, 0.0f); // Tốc độ xoay (Yaw)
+        Movement->bCanCrouch = true;
+        Movement->MaxWalkSpeed = WalkSpeed;
+        Movement->MaxWalkSpeedCrouched = CrouchedSpeed;
     }
 
     // 3. Khởi tạo Spring Arm (Cần giữ camera)
@@ -40,7 +43,6 @@ AMyCharacter::AMyCharacter()
     TrajectoryComponent = CreateDefaultSubobject<UCharacterTrajectoryComponent>(TEXT("TrajectoryComponent"));
 }
 
-// Called when the game starts or when spawned
 void AMyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
@@ -51,6 +53,8 @@ void AMyCharacter::BeginPlay()
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
+
+	UpdateMovementSpeed();
 }
 
 // Called every frame
@@ -68,10 +72,19 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	{
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AMyCharacter::Move);
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AMyCharacter::Look);
-	}
-	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
-	{
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &AMyCharacter::Jump);
+
+		if (CrouchAction)
+		{
+			EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &AMyCharacter::StartCrouching);
+			EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &AMyCharacter::StopCrouching);
+		}
+
+		if (SprintAction)
+		{
+			EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &AMyCharacter::StartSprinting);
+			EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &AMyCharacter::StopSprinting);
+		}
 	}
 }
 void AMyCharacter::Move(const FInputActionValue& Value)
@@ -85,24 +98,68 @@ void AMyCharacter::Move(const FInputActionValue& Value)
         const FRotator Rotation = Controller->GetControlRotation();
         const FRotator YawRotation(0, Rotation.Yaw, 0);
 
-        // Tính toán vector hướng tiến (Forward) và hướng ngang (Right)
         const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
         const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
-        // Truyền lực di chuyển vào Pawn
         AddMovementInput(ForwardDirection, MovementVector.Y);
         AddMovementInput(RightDirection, MovementVector.X);
     }
 }
 void AMyCharacter::Look(const FInputActionValue& Value)
 {
-	// input is a Vector2D
 	FVector2D LookVector = Value.Get<FVector2D>();
 
 	if (Controller != nullptr)
-	{
-		// add look 
+	{ 
 		AddControllerYawInput(LookVector.X);
 		AddControllerPitchInput(LookVector.Y);
+	}
+}
+
+void AMyCharacter::StartCrouching()
+{
+	if (GetCharacterMovement() && GetCharacterMovement()->CanCrouch())
+	{
+		Crouch();
+	}
+	UpdateMovementSpeed();
+}
+
+void AMyCharacter::StopCrouching()
+{
+	UnCrouch();
+	UpdateMovementSpeed();
+}
+
+void AMyCharacter::StartSprinting()
+{
+	bWantsToRun = true;
+	UpdateMovementSpeed();
+}
+
+void AMyCharacter::StopSprinting()
+{
+	bWantsToRun = false;
+	UpdateMovementSpeed();
+}
+
+void AMyCharacter::UpdateMovementSpeed()
+{
+	if (!GetCharacterMovement())
+	{
+		return;
+	}
+
+	if (GetCharacterMovement()->IsCrouching())
+	{
+		GetCharacterMovement()->MaxWalkSpeed = GetCharacterMovement()->MaxWalkSpeedCrouched;
+	}
+	else if (bWantsToRun)
+	{
+		GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
+	}
+	else
+	{
+		GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 	}
 }

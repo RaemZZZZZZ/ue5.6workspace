@@ -1,36 +1,32 @@
-#include "MyAnimInstance.h"
-#include "GameFramework/Character.h"
-#include "GameFramework/CharacterMovementComponent.h"
-#include "CharacterTrajectoryComponent.h" // Nhúng thư viện Trajectory
+#pragma once
 
-void UMyAnimInstance::NativeInitializeAnimation()
+#include "CoreMinimal.h"
+#include "Animation/AnimInstance.h"
+#include "PoseSearch/PoseSearchTrajectoryTypes.h" // Bắt buộc để sử dụng struct FPoseSearchQueryTrajectory
+#include "MyAnimInstance.generated.h"
+
+class ACharacter;
+class UCharacterMovementComponent;
+
+UCLASS()
+class CPLUSPLUS_API UMyAnimInstance : public UAnimInstance
 {
-	Super::NativeInitializeAnimation();
+	GENERATED_BODY()
 
-	// Lấy chủ sở hữu của bộ xương này ngay khi bắt đầu
-	CharacterRef = Cast<ACharacter>(TryGetPawnOwner());
-	
-	if (CharacterRef)
-	{
-		MovementComponentRef = CharacterRef->GetCharacterMovement();
-	}
-}
+public:
+	virtual void NativeInitializeAnimation() override;
+	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 
-void UMyAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
-{
-	Super::NativeUpdateAnimation(DeltaSeconds);
+protected:
+	UPROPERTY(BlueprintReadOnly, Category = "Character")
+	ACharacter* CharacterRef;
 
-	if (CharacterRef && MovementComponentRef)
-	{
-		FVector Velocity = CharacterRef->GetVelocity();
-		Velocity.Z = 0.0f;
-		GroundSpeed = Velocity.Size();
+	UPROPERTY(BlueprintReadOnly, Category = "Character")
+	UCharacterMovementComponent* MovementComponentRef;
 
-		bIsFalling = MovementComponentRef->IsFalling();
+	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	float GroundSpeed;
 
-		if (UCharacterTrajectoryComponent* TrajComp = CharacterRef->FindComponentByClass<UCharacterTrajectoryComponent>())
-		{
-			CharacterTrajectory = TrajComp->GetTrajectory();
-		}
-	}
-}
+	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	bool bIsFalling;
+};
