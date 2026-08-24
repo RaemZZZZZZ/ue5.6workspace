@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
-#include "PoseSearch/PoseSearchTrajectoryTypes.h" // Bắt buộc để sử dụng struct FPoseSearchQueryTrajectory
+#include "PoseSearch/PoseSearchTrajectoryTypes.h" 
 #include "MyAnimInstance.generated.h"
 
 class ACharacter;

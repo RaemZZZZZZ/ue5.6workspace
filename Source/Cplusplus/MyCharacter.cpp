@@ -4,6 +4,8 @@
 #include "MyCharacter.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "InputCoreTypes.h"
+#include "InputMappingContext.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -21,31 +23,28 @@ AMyCharacter::AMyCharacter()
     if (UCharacterMovementComponent* Movement = GetCharacterMovement())
     {
         Movement->bOrientRotationToMovement = true; 
-        Movement->RotationRate = FRotator(0.0f, 500.0f, 0.0f); // Tốc độ xoay (Yaw)
-        Movement->bCanCrouch = true;
+        Movement->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
         Movement->MaxWalkSpeed = WalkSpeed;
         Movement->MaxWalkSpeedCrouched = CrouchedSpeed;
     }
 
-    // 3. Khởi tạo Spring Arm (Cần giữ camera)
-    CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
-    CameraBoom->SetupAttachment(RootComponent);
-    CameraBoom->TargetArmLength = 400.0f; // Khoảng cách từ camera đến nhân vật
-    CameraBoom->bUsePawnControlRotation = true; // Xoay cần camera theo chuột
 
-    // 4. Khởi tạo Camera
-    FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
-    FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Gắn vào đầu ngọn của Spring Arm
-    FollowCamera->bUsePawnControlRotation = false; // Camera không tự xoay, mà đi theo Spring Arm
+	
 
-
-    
+    // 5.Trajectory
     TrajectoryComponent = CreateDefaultSubobject<UCharacterTrajectoryComponent>(TEXT("TrajectoryComponent"));
 }
 
 void AMyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	GetMesh()->HideBoneByName(FName("head"), EPhysBodyOp::PBO_None);
+	if (DefaultMappingContext && SprintAction)
+	{
+		DefaultMappingContext->UnmapKey(SprintAction, EKeys::LeftShift);
+		DefaultMappingContext->MapKey(SprintAction, EKeys::LeftShift);
+	}
+
 	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
@@ -53,7 +52,6 @@ void AMyCharacter::BeginPlay()
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
-
 	UpdateMovementSpeed();
 }
 
@@ -61,7 +59,6 @@ void AMyCharacter::BeginPlay()
 void AMyCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
 
 // Called to bind functionality to input
@@ -89,12 +86,10 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 }
 void AMyCharacter::Move(const FInputActionValue& Value)
 {
-    // Lấy giá trị Vector 2D từ Input Action (X cho trái/phải, Y cho tiến/lùi)
     FVector2D MovementVector = Value.Get<FVector2D>();
 
     if (Controller != nullptr)
     {
-        // Chỉ lấy hướng xoay theo trục Z (Yaw) của Controller để đảm bảo nhân vật luôn đi thẳng trên mặt đất
         const FRotator Rotation = Controller->GetControlRotation();
         const FRotator YawRotation(0, Rotation.Yaw, 0);
 
@@ -118,7 +113,7 @@ void AMyCharacter::Look(const FInputActionValue& Value)
 
 void AMyCharacter::StartCrouching()
 {
-	if (GetCharacterMovement() && GetCharacterMovement()->CanCrouch())
+	if (CanCrouch())
 	{
 		Crouch();
 	}
@@ -150,7 +145,7 @@ void AMyCharacter::UpdateMovementSpeed()
 		return;
 	}
 
-	if (GetCharacterMovement()->IsCrouching())
+	if (IsCrouched())
 	{
 		GetCharacterMovement()->MaxWalkSpeed = GetCharacterMovement()->MaxWalkSpeedCrouched;
 	}
