@@ -10,6 +10,7 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "CharacterTrajectoryComponent.h"
+#include <type_traits>
 
 // Sets default values
 AMyCharacter::AMyCharacter()
@@ -28,17 +29,13 @@ AMyCharacter::AMyCharacter()
         Movement->MaxWalkSpeedCrouched = CrouchedSpeed;
     }
 
-
-	
-
-    // 5.Trajectory
+    // 1.Trajectory
     TrajectoryComponent = CreateDefaultSubobject<UCharacterTrajectoryComponent>(TEXT("TrajectoryComponent"));
 }
 
 void AMyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	GetMesh()->HideBoneByName(FName("head"), EPhysBodyOp::PBO_None);
 	if (DefaultMappingContext && SprintAction)
 	{
 		DefaultMappingContext->UnmapKey(SprintAction, EKeys::LeftShift);
@@ -52,6 +49,14 @@ void AMyCharacter::BeginPlay()
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
+	if (APlayerController* PC = Cast<APlayerController>(Controller))
+    {
+        if (PC->PlayerCameraManager)
+        {
+            PC->PlayerCameraManager->ViewPitchMin = -65.0f; 
+            PC->PlayerCameraManager->ViewPitchMax = 65.0f;  
+        }
+    }
 	UpdateMovementSpeed();
 }
 
