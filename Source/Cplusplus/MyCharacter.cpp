@@ -12,7 +12,7 @@
 #include "CharacterTrajectoryComponent.h"
 #include <type_traits>
 
-// Sets default values
+
 AMyCharacter::AMyCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
