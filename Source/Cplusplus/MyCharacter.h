@@ -49,7 +49,7 @@ protected:
 	float WalkSpeed = 300.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
-	float RunSpeed = 600.0f;
+	float RunSpeed = 500.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
 	float CrouchedSpeed = 200.0f;
@@ -59,6 +59,7 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	bool bWantsToRun = false;
+	
 	
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);

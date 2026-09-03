@@ -87,6 +87,11 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 			EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &AMyCharacter::StartSprinting);
 			EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &AMyCharacter::StopSprinting);
 		}
+		else
+		{
+			PlayerInputComponent->BindKey(EKeys::LeftShift, IE_Pressed, this, &AMyCharacter::StartSprinting);
+			PlayerInputComponent->BindKey(EKeys::LeftShift, IE_Released, this, &AMyCharacter::StopSprinting);
+		}
 	}
 }
 void AMyCharacter::Move(const FInputActionValue& Value)
