@@ -28,8 +28,6 @@ AMyCharacter::AMyCharacter()
         Movement->MaxWalkSpeed = WalkSpeed;
         Movement->MaxWalkSpeedCrouched = CrouchedSpeed;
     }
-
-    // 1.Trajectory
     TrajectoryComponent = CreateDefaultSubobject<UCharacterTrajectoryComponent>(TEXT("TrajectoryComponent"));
 }
 
